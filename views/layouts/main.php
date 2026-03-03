@@ -42,6 +42,12 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         ['label' => 'Candidatos', 'url' => ['/candidate/index']],
         ['label' => 'Propostas', 'url' => ['/proposal/index']],
     ];
+    if (!Yii::$app->user->isGuest) {
+        $items[] = ['label' => 'Minha Conta', 'url' => ['/site/my-account']];
+        if (Yii::$app->user->identity->isAdmin()) {
+            $items[] = ['label' => 'Solicitacoes', 'url' => ['/site/candidate-requests']];
+        }
+    }
     if (!Yii::$app->user->isGuest && Yii::$app->user->identity->isCandidate()) {
         $items[] = ['label' => 'Painel do Candidato', 'url' => ['/candidate-panel/index']];
     }

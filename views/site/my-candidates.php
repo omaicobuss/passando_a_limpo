@@ -5,61 +5,59 @@
 
 use app\models\Candidate;
 use yii\bootstrap5\Html;
-use yii\grid\GridView;
-use yii\helpers\Url;
+use yii\widgets\LinkPager;
 
 $this->title = 'Meus perfis de candidato';
 $this->params['breadcrumbs'][] = ['label' => 'Minha Conta', 'url' => ['/site/my-account']];
 $this->params['breadcrumbs'][] = $this->title;
-?>
-<div class="site-my-candidates">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 m-0"><?= Html::encode($this->title) ?></h1>
-        <span class="badge bg-secondary rounded-pill"><?= (int) $dataProvider->getTotalCount() ?> registro(s)</span>
-    </div>
 
-    <?php if ($dataProvider->getTotalCount() === 0): ?>
+$models = $dataProvider->getModels();
+$pagination = $dataProvider->getPagination();
+?>
+<div class="site-my-candidates app-account-collection">
+    <section class="app-page-hero mb-4">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-8">
+                <span class="app-section-eyebrow">Minha trajetória pública</span>
+                <h1 class="app-page-title mt-3 mb-2"><?= Html::encode($this->title) ?></h1>
+                <p class="app-page-subtitle mb-0">Veja em quais eleições você está registrado como candidato e abra cada perfil com um clique.</p>
+            </div>
+            <div class="col-lg-4">
+                <div class="app-page-metric">
+                    <strong><?= (int) $dataProvider->getTotalCount() ?></strong>
+                    <span>perfil(is) vinculado(s)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <?php if (empty($models)): ?>
         <div class="alert alert-info mb-0">Você ainda não possui perfis de candidato.</div>
     <?php else: ?>
-        <?= GridView::widget([
-            'dataProvider' => $dataProvider,
-            'tableOptions' => ['class' => 'table table-striped table-bordered align-middle'],
-            'columns' => [
-                [
-                    'attribute' => 'id',
-                    'label' => '#',
-                    'contentOptions' => ['style' => 'width: 70px;'],
-                ],
-                [
-                    'label' => 'Nome de exibição',
-                    'format' => 'raw',
-                    'value' => static function (Candidate $model): string {
-                        return Html::a(
-                            Html::encode((string) $model->display_name),
-                            Url::to(['/candidate/view', 'id' => $model->id])
-                        );
-                    },
-                ],
-                [
-                    'label' => 'Eleição',
-                    'format' => 'raw',
-                    'value' => static function (Candidate $model): string {
-                        $election = $model->election;
-                        if ($election === null) {
-                            return '<span class="text-muted">—</span>';
-                        }
-                        return Html::encode((string) $election->title);
-                    },
-                ],
-                [
-                    'attribute' => 'created_at',
-                    'label' => 'Criado em',
-                    'format' => 'raw',
-                    'value' => static function (Candidate $model): string {
-                        return Html::encode(date('d/m/Y', (int) $model->created_at));
-                    },
-                ],
-            ],
-        ]); ?>
+        <div class="app-record-grid app-record-grid--compact">
+            <?php foreach ($models as $model): ?>
+                <?php /** @var Candidate $model */ ?>
+                <article class="app-record-card app-record-card--candidate">
+                    <div class="app-record-card__header">
+                        <span class="app-record-chip app-record-chip--soft"><?= Html::encode((string) ($model->election->title ?? 'Sem eleição')) ?></span>
+                        <span class="app-record-card__id">#<?= (int) $model->id ?></span>
+                    </div>
+                    <h2 class="app-record-card__title"><?= Html::encode((string) $model->display_name) ?></h2>
+                    <p class="app-record-card__text"><?= Html::encode(mb_strimwidth(trim((string) $model->bio) ?: 'Perfil de candidatura disponível para consulta pública.', 0, 140, '...')) ?></p>
+                    <div class="app-record-meta">
+                        <span><strong>Eleição</strong> <?= Html::encode((string) ($model->election->title ?? '-')) ?></span>
+                        <span><strong>Criado em</strong> <?= date('d/m/Y', (int) $model->created_at) ?></span>
+                    </div>
+                    <div class="app-record-card__actions">
+                        <?= Html::a('Ver perfil', ['/candidate/view', 'id' => $model->id], ['class' => 'btn btn-primary app-btn']) ?>
+                    </div>
+                </article>
+            <?php endforeach; ?>
+        </div>
+
+        <?= LinkPager::widget([
+            'pagination' => $pagination,
+            'options' => ['class' => 'pagination justify-content-center mt-4'],
+        ]) ?>
     <?php endif; ?>
 </div>

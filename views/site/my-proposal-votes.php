@@ -5,63 +5,63 @@
 
 use app\models\ProposalVote;
 use yii\bootstrap5\Html;
-use yii\grid\GridView;
-use yii\helpers\Url;
+use yii\widgets\LinkPager;
 
 $this->title = 'Meus votos em propostas';
 $this->params['breadcrumbs'][] = ['label' => 'Minha Conta', 'url' => ['/site/my-account']];
 $this->params['breadcrumbs'][] = $this->title;
-?>
-<div class="site-my-proposal-votes">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 m-0"><?= Html::encode($this->title) ?></h1>
-        <span class="badge bg-secondary rounded-pill"><?= (int) $dataProvider->getTotalCount() ?> registro(s)</span>
-    </div>
 
-    <?php if ($dataProvider->getTotalCount() === 0): ?>
+$models = $dataProvider->getModels();
+$pagination = $dataProvider->getPagination();
+?>
+<div class="site-my-proposal-votes app-account-collection">
+    <section class="app-page-hero mb-4">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-8">
+                <span class="app-section-eyebrow">Histórico de votos</span>
+                <h1 class="app-page-title mt-3 mb-2"><?= Html::encode($this->title) ?></h1>
+                <p class="app-page-subtitle mb-0">Revise em quais propostas você já votou e o sentido de cada escolha registrada.</p>
+            </div>
+            <div class="col-lg-4">
+                <div class="app-page-metric">
+                    <strong><?= (int) $dataProvider->getTotalCount() ?></strong>
+                    <span>voto(s) em propostas</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <?php if (empty($models)): ?>
         <div class="alert alert-info mb-0">Você ainda não votou em nenhuma proposta.</div>
     <?php else: ?>
-        <?= GridView::widget([
-            'dataProvider' => $dataProvider,
-            'tableOptions' => ['class' => 'table table-striped table-bordered align-middle'],
-            'columns' => [
-                [
-                    'attribute' => 'id',
-                    'label' => '#',
-                    'contentOptions' => ['style' => 'width: 70px;'],
-                ],
-                [
-                    'label' => 'Proposta',
-                    'format' => 'raw',
-                    'value' => static function (ProposalVote $model): string {
-                        $proposal = $model->proposal;
-                        if ($proposal === null) {
-                            return '<span class="text-muted">—</span>';
-                        }
-                        return Html::a(
-                            Html::encode((string) $proposal->title),
-                            Url::to(['/proposal/view', 'id' => $proposal->id])
-                        );
-                    },
-                ],
-                [
-                    'label' => 'Voto',
-                    'format' => 'raw',
-                    'value' => static function (ProposalVote $model): string {
-                        if ((int) $model->value > 0) {
-                            return '<span class="badge bg-success">👍 Positivo</span>';
-                        }
-                        return '<span class="badge bg-danger">👎 Negativo</span>';
-                    },
-                ],
-                [
-                    'attribute' => 'created_at',
-                    'label' => 'Data',
-                    'value' => static function (ProposalVote $model): string {
-                        return date('d/m/Y H:i', (int) $model->created_at);
-                    },
-                ],
-            ],
-        ]); ?>
+        <div class="app-record-grid app-record-grid--compact">
+            <?php foreach ($models as $model): ?>
+                <?php /** @var ProposalVote $model */ ?>
+                <?php $isPositive = (int) $model->value > 0; ?>
+                <article class="app-record-card app-record-card--vote">
+                    <div class="app-record-card__header">
+                        <span class="app-record-chip <?= $isPositive ? 'app-record-chip--success' : 'app-record-chip--danger' ?>">
+                            <?= $isPositive ? 'Voto positivo' : 'Voto negativo' ?>
+                        </span>
+                        <span class="app-record-card__id">#<?= (int) $model->id ?></span>
+                    </div>
+                    <h2 class="app-record-card__title"><?= Html::encode((string) ($model->proposal?->title ?? 'Proposta indisponível')) ?></h2>
+                    <p class="app-record-card__text">Seu voto foi registrado como <?= $isPositive ? 'apoio' : 'rejeição' ?> nesta proposta.</p>
+                    <div class="app-record-meta">
+                        <span><strong>Data</strong> <?= date('d/m/Y H:i', (int) $model->created_at) ?></span>
+                    </div>
+                    <?php if ($model->proposal !== null): ?>
+                        <div class="app-record-card__actions">
+                            <?= Html::a('Abrir proposta', ['/proposal/view', 'id' => $model->proposal->id], ['class' => 'btn btn-primary app-btn']) ?>
+                        </div>
+                    <?php endif; ?>
+                </article>
+            <?php endforeach; ?>
+        </div>
+
+        <?= LinkPager::widget([
+            'pagination' => $pagination,
+            'options' => ['class' => 'pagination justify-content-center mt-4'],
+        ]) ?>
     <?php endif; ?>
 </div>

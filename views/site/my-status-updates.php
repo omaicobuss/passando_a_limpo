@@ -6,69 +6,62 @@
 use app\models\Proposal;
 use app\models\ProposalStatusUpdate;
 use yii\bootstrap5\Html;
-use yii\grid\GridView;
 use yii\helpers\StringHelper;
-use yii\helpers\Url;
+use yii\widgets\LinkPager;
 
 $this->title = 'Minhas atualizações de status';
 $this->params['breadcrumbs'][] = ['label' => 'Minha Conta', 'url' => ['/site/my-account']];
 $this->params['breadcrumbs'][] = $this->title;
-?>
-<div class="site-my-status-updates">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 m-0"><?= Html::encode($this->title) ?></h1>
-        <span class="badge bg-secondary rounded-pill"><?= (int) $dataProvider->getTotalCount() ?> registro(s)</span>
-    </div>
 
-    <?php if ($dataProvider->getTotalCount() === 0): ?>
+$models = $dataProvider->getModels();
+$pagination = $dataProvider->getPagination();
+?>
+<div class="site-my-status-updates app-account-collection">
+    <section class="app-page-hero mb-4">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-8">
+                <span class="app-section-eyebrow">Acompanhamento pós-eleição</span>
+                <h1 class="app-page-title mt-3 mb-2"><?= Html::encode($this->title) ?></h1>
+                <p class="app-page-subtitle mb-0">Concentre em um só lugar o histórico de atualizações de execução que você registrou nas propostas.</p>
+            </div>
+            <div class="col-lg-4">
+                <div class="app-page-metric">
+                    <strong><?= (int) $dataProvider->getTotalCount() ?></strong>
+                    <span>atualização(ões) publicadas</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <?php if (empty($models)): ?>
         <div class="alert alert-info mb-0">Você ainda não registrou nenhuma atualização de status.</div>
     <?php else: ?>
-        <?= GridView::widget([
-            'dataProvider' => $dataProvider,
-            'tableOptions' => ['class' => 'table table-striped table-bordered align-middle'],
-            'columns' => [
-                [
-                    'attribute' => 'id',
-                    'label' => '#',
-                    'contentOptions' => ['style' => 'width: 70px;'],
-                ],
-                [
-                    'label' => 'Proposta',
-                    'format' => 'raw',
-                    'value' => static function (ProposalStatusUpdate $model): string {
-                        $proposal = $model->proposal;
-                        if ($proposal === null) {
-                            return '<span class="text-muted">—</span>';
-                        }
-                        return Html::a(
-                            Html::encode((string) $proposal->title),
-                            Url::to(['/proposal/view', 'id' => $proposal->id])
-                        );
-                    },
-                ],
-                [
-                    'label' => 'Status registrado',
-                    'format' => 'raw',
-                    'value' => static function (ProposalStatusUpdate $model): string {
-                        $options = Proposal::statusOptions();
-                        $label = $options[$model->status] ?? $model->status;
-                        return Html::encode((string) $label);
-                    },
-                ],
-                [
-                    'label' => 'Descrição',
-                    'value' => static function (ProposalStatusUpdate $model): string {
-                        return StringHelper::truncateWords((string) $model->description, 20, '...');
-                    },
-                ],
-                [
-                    'attribute' => 'update_date',
-                    'label' => 'Data da atualização',
-                    'value' => static function (ProposalStatusUpdate $model): string {
-                        return date('d/m/Y', strtotime((string) $model->update_date));
-                    },
-                ],
-            ],
-        ]); ?>
+        <div class="app-record-stack app-record-stack--timeline">
+            <?php foreach ($models as $model): ?>
+                <?php /** @var ProposalStatusUpdate $model */ ?>
+                <?php $statusLabel = Proposal::statusOptions()[$model->status] ?? $model->status; ?>
+                <article class="app-record-card app-record-card--timeline">
+                    <div class="app-record-card__header">
+                        <span class="app-record-chip app-record-chip--soft"><?= Html::encode((string) $statusLabel) ?></span>
+                        <span class="app-record-card__id"><?= date('d/m/Y', strtotime((string) $model->update_date)) ?></span>
+                    </div>
+                    <h2 class="app-record-card__title"><?= Html::encode((string) ($model->proposal?->title ?? 'Proposta indisponível')) ?></h2>
+                    <p class="app-record-card__text"><?= Html::encode(StringHelper::truncateWords((string) $model->description, 28, '...')) ?></p>
+                    <div class="app-record-meta">
+                        <span><strong>Registrada em</strong> <?= date('d/m/Y H:i', (int) $model->created_at) ?></span>
+                    </div>
+                    <?php if ($model->proposal !== null): ?>
+                        <div class="app-record-card__actions">
+                            <?= Html::a('Abrir proposta', ['/proposal/view', 'id' => $model->proposal->id], ['class' => 'btn btn-primary app-btn']) ?>
+                        </div>
+                    <?php endif; ?>
+                </article>
+            <?php endforeach; ?>
+        </div>
+
+        <?= LinkPager::widget([
+            'pagination' => $pagination,
+            'options' => ['class' => 'pagination justify-content-center mt-4'],
+        ]) ?>
     <?php endif; ?>
 </div>

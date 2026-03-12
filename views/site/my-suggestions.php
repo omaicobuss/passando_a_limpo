@@ -5,72 +5,67 @@
 
 use app\models\ProposalSuggestion;
 use yii\bootstrap5\Html;
-use yii\grid\GridView;
-use yii\helpers\Url;
+use yii\widgets\LinkPager;
 
 $this->title = 'Minhas sugestões em propostas';
 $this->params['breadcrumbs'][] = ['label' => 'Minha Conta', 'url' => ['/site/my-account']];
 $this->params['breadcrumbs'][] = $this->title;
-?>
-<div class="site-my-suggestions">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 m-0"><?= Html::encode($this->title) ?></h1>
-        <span class="badge bg-secondary rounded-pill"><?= (int) $dataProvider->getTotalCount() ?> registro(s)</span>
-    </div>
 
-    <?php if ($dataProvider->getTotalCount() === 0): ?>
+$models = $dataProvider->getModels();
+$pagination = $dataProvider->getPagination();
+?>
+<div class="site-my-suggestions app-account-collection">
+    <section class="app-page-hero mb-4">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-8">
+                <span class="app-section-eyebrow">Colaboração em propostas</span>
+                <h1 class="app-page-title mt-3 mb-2"><?= Html::encode($this->title) ?></h1>
+                <p class="app-page-subtitle mb-0">Acompanhe o destino das melhorias que você sugeriu, com status, pontuação e acesso direto à proposta original.</p>
+            </div>
+            <div class="col-lg-4">
+                <div class="app-page-metric">
+                    <strong><?= (int) $dataProvider->getTotalCount() ?></strong>
+                    <span>sugestão(ões) enviada(s)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <?php if (empty($models)): ?>
         <div class="alert alert-info mb-0">Você ainda não enviou nenhuma sugestão.</div>
     <?php else: ?>
-        <?= GridView::widget([
-            'dataProvider' => $dataProvider,
-            'tableOptions' => ['class' => 'table table-striped table-bordered align-middle'],
-            'columns' => [
-                [
-                    'attribute' => 'id',
-                    'label' => '#',
-                    'contentOptions' => ['style' => 'width: 70px;'],
-                ],
-                [
-                    'label' => 'Título da sugestão',
-                    'format' => 'raw',
-                    'value' => static function (ProposalSuggestion $model): string {
-                        return Html::a(
-                            Html::encode((string) $model->title),
-                            Url::to(['/proposal/view', 'id' => $model->proposal_id])
-                        );
-                    },
-                ],
-                [
-                    'label' => 'Proposta',
-                    'value' => static function (ProposalSuggestion $model): string {
-                        return (string) ($model->proposal?->title ?? '—');
-                    },
-                ],
-                [
-                    'label' => 'Status',
-                    'format' => 'raw',
-                    'value' => static function (ProposalSuggestion $model): string {
-                        return match ($model->status) {
-                            ProposalSuggestion::STATUS_APPROVED => '<span class="badge bg-success">Aprovada</span>',
-                            ProposalSuggestion::STATUS_REJECTED => '<span class="badge bg-danger">Rejeitada</span>',
-                            default => '<span class="badge bg-warning text-dark">Pendente</span>',
-                        };
-                    },
-                ],
-                [
-                    'label' => 'Pontuação',
-                    'value' => static function (ProposalSuggestion $model): int {
-                        return $model->getScore();
-                    },
-                ],
-                [
-                    'attribute' => 'created_at',
-                    'label' => 'Data',
-                    'value' => static function (ProposalSuggestion $model): string {
-                        return date('d/m/Y H:i', (int) $model->created_at);
-                    },
-                ],
-            ],
-        ]); ?>
+        <div class="app-record-grid app-record-grid--compact">
+            <?php foreach ($models as $model): ?>
+                <?php /** @var ProposalSuggestion $model */ ?>
+                <?php
+                $statusClass = match ($model->status) {
+                    ProposalSuggestion::STATUS_APPROVED => 'app-record-chip--success',
+                    ProposalSuggestion::STATUS_REJECTED => 'app-record-chip--danger',
+                    default => 'app-record-chip--accent',
+                };
+                $statusLabel = ProposalSuggestion::statusOptions()[$model->status] ?? $model->status;
+                ?>
+                <article class="app-record-card app-record-card--proposal">
+                    <div class="app-record-card__header">
+                        <span class="app-record-chip <?= $statusClass ?>"><?= Html::encode((string) $statusLabel) ?></span>
+                        <span class="home-score-chip">Score <?= $model->getScore() ?></span>
+                    </div>
+                    <h2 class="app-record-card__title"><?= Html::encode((string) $model->title) ?></h2>
+                    <p class="app-record-card__text"><?= Html::encode(mb_strimwidth((string) $model->content, 0, 160, '...')) ?></p>
+                    <div class="app-record-meta">
+                        <span><strong>Proposta</strong> <?= Html::encode((string) ($model->proposal?->title ?? '-')) ?></span>
+                        <span><strong>Data</strong> <?= date('d/m/Y H:i', (int) $model->created_at) ?></span>
+                    </div>
+                    <div class="app-record-card__actions">
+                        <?= Html::a('Ver proposta', ['/proposal/view', 'id' => $model->proposal_id], ['class' => 'btn btn-primary app-btn']) ?>
+                    </div>
+                </article>
+            <?php endforeach; ?>
+        </div>
+
+        <?= LinkPager::widget([
+            'pagination' => $pagination,
+            'options' => ['class' => 'pagination justify-content-center mt-4'],
+        ]) ?>
     <?php endif; ?>
 </div>

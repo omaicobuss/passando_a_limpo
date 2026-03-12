@@ -21,7 +21,9 @@ class ProposalSuggestionController extends Controller
                 'class' => AccessControl::class,
                 'rules' => [
                     ['actions' => ['view'], 'allow' => true],
-                    ['actions' => ['create', 'vote', 'moderate'], 'allow' => true, 'roles' => ['@']],
+                    ['actions' => ['create'], 'allow' => true, 'roles' => ['commentProposal']],
+                    ['actions' => ['vote'], 'allow' => true, 'roles' => ['voteProposal']],
+                    ['actions' => ['moderate'], 'allow' => true, 'roles' => ['moderateSuggestion']],
                 ],
             ],
             'verbs' => [
@@ -104,14 +106,12 @@ class ProposalSuggestionController extends Controller
             throw new NotFoundHttpException('Status inválido.');
         }
 
-        $user = Yii::$app->user->identity;
-        $isAuthorCandidate = (int) $model->proposal->candidate->user_id === (int) $user->id;
-        if (!$user->isAdmin() && !$isAuthorCandidate) {
+        if (!Yii::$app->user->can('moderateSuggestion', ['suggestion' => $model])) {
             throw new ForbiddenHttpException('Você não pode moderar essa sugestão.');
         }
 
         $model->status = $status;
-        $model->moderated_by = $user->id;
+        $model->moderated_by = (int) Yii::$app->user->id;
         $model->moderated_at = time();
         $model->save(false, ['status', 'moderated_by', 'moderated_at', 'updated_at']);
 

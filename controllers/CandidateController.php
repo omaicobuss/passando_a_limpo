@@ -4,9 +4,9 @@ namespace app\controllers;
 
 use app\models\Candidate;
 use app\models\Election;
+use app\models\CandidateSearch;
 use app\models\User;
 use Yii;
-use yii\data\ActiveDataProvider;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
 use yii\helpers\ArrayHelper;
@@ -23,7 +23,7 @@ class CandidateController extends Controller
                 'class' => AccessControl::class,
                 'rules' => [
                     ['actions' => ['index', 'view'], 'allow' => true],
-                    ['actions' => ['create', 'update', 'delete'], 'allow' => true, 'roles' => ['@']],
+                    ['actions' => ['create', 'update', 'delete'], 'allow' => true, 'roles' => ['candidate']],
                 ],
             ],
             'verbs' => [
@@ -35,11 +35,14 @@ class CandidateController extends Controller
 
     public function actionIndex(): string
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Candidate::find()->with(['user', 'election'])->orderBy(['id' => SORT_DESC]),
-            'pagination' => ['pageSize' => 20],
+        $searchModel = new CandidateSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        return $this->render('index', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+            'electionOptions' => $this->electionOptions(),
         ]);
-        return $this->render('index', ['dataProvider' => $dataProvider]);
     }
 
     public function actionView(int $id): string
@@ -54,17 +57,16 @@ class CandidateController extends Controller
     public function actionCreate()
     {
         $model = new Candidate();
-        if (!Yii::$app->user->identity?->isAdmin()) {
-            $model->user_id = Yii::$app->user->id;
-        }
+        $this->enforceCurrentUserOwnership($model);
 
         if ($model->load(Yii::$app->request->post())) {
+            $this->enforceCurrentUserOwnership($model);
             $this->assertCanManage($model);
             if ($model->save()) {
                 $user = User::findOne($model->user_id);
-                if ($user !== null && $user->role === 'citizen') {
+                if ($user !== null && !$user->hasRole('candidate')) {
                     $user->role = 'candidate';
-                    $user->save(false, ['role']);
+                    $user->save(false, ['role', 'updated_at']);
                 }
                 Yii::$app->session->setFlash('success', 'Candidato salvo.');
                 return $this->redirect(['view', 'id' => $model->id]);
@@ -83,9 +85,14 @@ class CandidateController extends Controller
         $model = $this->findModel($id);
         $this->assertCanManage($model);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            Yii::$app->session->setFlash('success', 'Candidato atualizado.');
-            return $this->redirect(['view', 'id' => $model->id]);
+        if ($model->load(Yii::$app->request->post())) {
+            $this->enforceCurrentUserOwnership($model);
+            $this->assertCanManage($model);
+
+            if ($model->save()) {
+                Yii::$app->session->setFlash('success', 'Candidato atualizado.');
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
         }
 
         return $this->render('update', [
@@ -106,12 +113,21 @@ class CandidateController extends Controller
 
     protected function assertCanManage(Candidate $candidate): void
     {
-        $user = Yii::$app->user->identity;
-        if ($user === null) {
-            throw new ForbiddenHttpException('Acesso negado.');
-        }
-        if (!$user->isAdmin() && (int) $candidate->user_id !== (int) $user->id) {
+        $userId = (int) Yii::$app->user->id;
+
+        if (!Yii::$app->user->can('admin') && (int) $candidate->user_id !== $userId) {
             throw new ForbiddenHttpException('Você não pode alterar este candidato.');
+        }
+
+        if (!Yii::$app->user->can('manageCandidate', ['candidate' => $candidate])) {
+            throw new ForbiddenHttpException('Você não pode alterar este candidato.');
+        }
+    }
+
+    protected function enforceCurrentUserOwnership(Candidate $candidate): void
+    {
+        if (!Yii::$app->user->can('admin')) {
+            $candidate->user_id = (int) Yii::$app->user->id;
         }
     }
 
@@ -126,7 +142,7 @@ class CandidateController extends Controller
 
     protected function userOptions(): array
     {
-        if (!Yii::$app->user->identity?->isAdmin()) {
+        if (!Yii::$app->user->can('admin')) {
             $id = Yii::$app->user->id;
             $user = User::findOne($id);
             return $user ? [$user->id => $user->username] : [];

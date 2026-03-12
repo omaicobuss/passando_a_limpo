@@ -8,7 +8,7 @@ use app\models\Proposal;
 use yii\bootstrap5\ActiveForm;
 use yii\bootstrap5\Html;
 
-$form = ActiveForm::begin();
+$form = ActiveForm::begin(['id' => 'proposal-form']);
 echo $form->field($model, 'title')->textInput(['maxlength' => true]);
 echo $form->field($model, 'theme')->textInput(['maxlength' => true]);
 echo $form->field($model, 'election_id')->dropDownList($electionOptions, ['prompt' => 'Selecione']);

@@ -30,8 +30,21 @@ $config = [
         'mailer' => [
             'class' => \yii\symfonymailer\Mailer::class,
             'viewPath' => '@app/mail',
-            // send all mails to a file by default.
-            'useFileTransport' => true,
+            'useFileTransport' => (bool) ($params['mailer']['useFileTransport'] ?? YII_ENV_DEV),
+            'transport' => [
+                'scheme' => $params['mailer']['scheme'] ?? 'smtp',
+                'host' => $params['mailer']['host'] ?? 'smtp.helum.com.br',
+                'username' => $params['mailer']['username'] ?? 'financeiro@helum.com.br',
+                'password' => $params['mailer']['password'] ?? '',
+                'port' => (int) ($params['mailer']['port'] ?? 587),
+                'options' => [
+                    'encryption' => $params['mailer']['encryption'] ?? 'tls',
+                    'auth_mode' => $params['mailer']['authMode'] ?? 'login',
+                ],
+            ],
+            'messageConfig' => [
+                'from' => [($params['senderEmail'] ?? 'financeiro@helum.com.br') => ($params['senderName'] ?? 'Helum Financeiro')],
+            ],
         ],
         'log' => [
             'traceLevel' => YII_DEBUG ? 3 : 0,
@@ -46,14 +59,16 @@ $config = [
         'authManager' => [
             'class' => yii\rbac\DbManager::class,
         ],
-        /*
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
+                '' => 'site/index',
+                '<controller:[\w-]+>/<id:\d+>' => '<controller>/view',
+                '<controller:[\w-]+>/<action:[\w-]+>/<id:\d+>' => '<controller>/<action>',
+                '<controller:[\w-]+>/<action:[\w-]+>' => '<controller>/<action>',
             ],
         ],
-        */
     ],
     'params' => $params,
 ];

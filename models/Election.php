@@ -61,4 +61,20 @@ class Election extends ActiveRecord
         }
         return parent::beforeValidate();
     }
+
+    public function hasFinished(?int $referenceTimestamp = null): bool
+    {
+        $endDate = trim((string) $this->end_date);
+        if ($endDate === '') {
+            return false;
+        }
+
+        $referenceTimestamp ??= time();
+        $endTimestamp = strtotime($endDate . ' 23:59:59');
+        if ($endTimestamp === false) {
+            return false;
+        }
+
+        return $referenceTimestamp > $endTimestamp;
+    }
 }

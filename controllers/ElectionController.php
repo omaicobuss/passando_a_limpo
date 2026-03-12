@@ -3,8 +3,8 @@
 namespace app\controllers;
 
 use app\models\Election;
+use app\models\ElectionSearch;
 use Yii;
-use yii\data\ActiveDataProvider;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
 use yii\web\Controller;
@@ -25,8 +25,7 @@ class ElectionController extends Controller
                     [
                         'actions' => ['create', 'update', 'delete'],
                         'allow' => true,
-                        'roles' => ['@'],
-                        'matchCallback' => fn () => (Yii::$app->user->can('manageElection') || (Yii::$app->user->identity?->isAdmin() ?? false)),
+                        'roles' => ['manageElection'],
                     ],
                 ],
             ],
@@ -41,12 +40,13 @@ class ElectionController extends Controller
 
     public function actionIndex(): string
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Election::find()->orderBy(['start_date' => SORT_DESC, 'id' => SORT_DESC]),
-            'pagination' => ['pageSize' => 20],
-        ]);
+        $searchModel = new ElectionSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        return $this->render('index', ['dataProvider' => $dataProvider]);
+        return $this->render('index', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
     }
 
     public function actionView(int $id): string

@@ -16,6 +16,9 @@ return [
     'language' => 'en-US',
     'components' => [
         'db' => $db,
+        'authManager' => [
+            'class' => yii\rbac\DbManager::class,
+        ],
         'mailer' => [
             'class' => \yii\symfonymailer\Mailer::class,
             'viewPath' => '@app/mail',

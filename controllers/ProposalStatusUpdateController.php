@@ -19,7 +19,7 @@ class ProposalStatusUpdateController extends Controller
             'access' => [
                 'class' => AccessControl::class,
                 'rules' => [
-                    ['actions' => ['create'], 'allow' => true, 'roles' => ['@']],
+                    ['actions' => ['create'], 'allow' => true, 'roles' => ['candidate']],
                 ],
             ],
             'verbs' => [
@@ -33,7 +33,7 @@ class ProposalStatusUpdateController extends Controller
     {
         $model = new ProposalStatusUpdate();
         $model->user_id = Yii::$app->user->id;
-        if (!$model->load(Yii::$app->request->post(), '')) {
+        if (!$model->load(Yii::$app->request->post()) && !$model->load(Yii::$app->request->post(), '')) {
             throw new NotFoundHttpException('Requisição inválida.');
         }
 
@@ -42,8 +42,7 @@ class ProposalStatusUpdateController extends Controller
             throw new NotFoundHttpException('Proposta não encontrada.');
         }
 
-        $user = Yii::$app->user->identity;
-        if (!$user->isAdmin() && (int) $proposal->candidate->user_id !== (int) $user->id) {
+        if (!Yii::$app->user->can('postStatusUpdate', ['proposal' => $proposal])) {
             throw new ForbiddenHttpException('Você não pode atualizar essa proposta.');
         }
 

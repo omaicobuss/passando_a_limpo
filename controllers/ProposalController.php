@@ -27,7 +27,9 @@ class ProposalController extends Controller
                 'class' => AccessControl::class,
                 'rules' => [
                     ['actions' => ['index', 'view'], 'allow' => true],
-                    ['actions' => ['create', 'update', 'delete', 'vote'], 'allow' => true, 'roles' => ['@']],
+                    ['actions' => ['create', 'update'], 'allow' => true, 'roles' => ['candidate']],
+                    ['actions' => ['delete'], 'allow' => true, 'roles' => ['admin']],
+                    ['actions' => ['vote'], 'allow' => true, 'roles' => ['voteProposal']],
                 ],
             ],
             'verbs' => [
@@ -76,8 +78,7 @@ class ProposalController extends Controller
 
     public function actionCreate()
     {
-        $user = Yii::$app->user->identity;
-        if (!$user?->isCandidate()) {
+        if (!Yii::$app->user->can('candidate')) {
             throw new ForbiddenHttpException('Apenas candidatos podem criar propostas.');
         }
 
@@ -88,7 +89,7 @@ class ProposalController extends Controller
         }
 
         if ($model->load(Yii::$app->request->post())) {
-            $this->assertCanEdit($model);
+            $this->assertCanCreate($model);
             if ($model->save()) {
                 Yii::$app->session->setFlash('success', 'Proposta criada.');
                 return $this->redirect(['view', 'id' => $model->id]);
@@ -105,11 +106,15 @@ class ProposalController extends Controller
     public function actionUpdate(int $id)
     {
         $model = $this->findModel($id);
-        $this->assertCanEdit($model);
+        $this->assertCanUpdate($model);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            Yii::$app->session->setFlash('success', 'Proposta atualizada.');
-            return $this->redirect(['view', 'id' => $model->id]);
+        if ($model->load(Yii::$app->request->post())) {
+            $this->assertCanUpdate($model);
+
+            if ($model->save()) {
+                Yii::$app->session->setFlash('success', 'Proposta atualizada.');
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
         }
 
         return $this->render('update', [
@@ -121,8 +126,7 @@ class ProposalController extends Controller
 
     public function actionDelete(int $id)
     {
-        $user = Yii::$app->user->identity;
-        if (!$user?->isAdmin()) {
+        if (!Yii::$app->user->can('admin')) {
             throw new ForbiddenHttpException('Apenas administradores podem excluir propostas.');
         }
         $this->findModel($id)->delete();
@@ -166,7 +170,7 @@ class ProposalController extends Controller
     protected function candidateOptionsForCurrentUser(): array
     {
         $query = Candidate::find()->orderBy(['display_name' => SORT_ASC]);
-        if (!Yii::$app->user->identity?->isAdmin()) {
+        if (!Yii::$app->user->can('admin')) {
             $query->andWhere(['user_id' => Yii::$app->user->id]);
         }
         return ArrayHelper::map($query->all(), 'id', 'display_name');
@@ -177,29 +181,50 @@ class ProposalController extends Controller
         return ArrayHelper::map(\app\models\Election::find()->orderBy(['start_date' => SORT_DESC])->all(), 'id', 'title');
     }
 
-    protected function assertCanEdit(Proposal $proposal): void
+    protected function assertCanCreate(Proposal $proposal): void
     {
-        $user = Yii::$app->user->identity;
-        if ($user === null) {
-            throw new ForbiddenHttpException('Acesso negado.');
+        $this->assertCandidateOwner($proposal, 'Você não pode criar proposta para outro candidato.');
+
+        if (!Yii::$app->user->can('createProposal', ['proposal' => $proposal])) {
+            throw new ForbiddenHttpException('Você não pode criar proposta para outro candidato.');
         }
-        if ($user->isAdmin()) {
-            return;
+    }
+
+    protected function assertCanUpdate(Proposal $proposal): void
+    {
+        if ($proposal->isEditLockedByElectionDeadline()) {
+            throw new ForbiddenHttpException('Não é permitido editar proposta após o prazo da eleição.');
         }
 
-        if ((int) $proposal->candidate_id === 0) {
-            return;
-        }
+        $this->assertCandidateOwner($proposal, 'Você não pode editar esta proposta.');
 
-        $candidate = Candidate::findOne($proposal->candidate_id);
-        if ($candidate === null || (int) $candidate->user_id !== (int) $user->id) {
+        if (!Yii::$app->user->can('updateOwnProposal', ['proposal' => $proposal])) {
             throw new ForbiddenHttpException('Você não pode editar esta proposta.');
+        }
+    }
+
+    protected function assertCandidateOwner(Proposal $proposal, string $message): void
+    {
+        if (Yii::$app->user->can('admin')) {
+            return;
+        }
+
+        $ownerId = (int) Candidate::find()
+            ->select('user_id')
+            ->where(['id' => $proposal->candidate_id])
+            ->scalar();
+
+        if ($ownerId !== (int) Yii::$app->user->id) {
+            throw new ForbiddenHttpException($message);
         }
     }
 
     protected function findModel(int $id): Proposal
     {
-        $model = Proposal::find()->with(['candidate.user', 'election', 'suggestions.votes', 'statusUpdates', 'comments.user'])->where(['proposal.id' => $id])->one();
+        $model = Proposal::find()
+            ->with(['candidate.user', 'election', 'suggestions.votes', 'statusUpdates', 'comments.user', 'revisions.editor'])
+            ->where(['proposal.id' => $id])
+            ->one();
         if ($model === null) {
             throw new NotFoundHttpException('Proposta não encontrada.');
         }

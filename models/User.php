@@ -126,15 +126,51 @@ class User extends ActiveRecord implements IdentityInterface
         $this->password_reset_token = null;
     }
 
+    public function afterSave($insert, $changedAttributes): void
+    {
+        parent::afterSave($insert, $changedAttributes);
+
+        if ($insert || array_key_exists('role', $changedAttributes)) {
+            $role = (string) ($this->role ?: 'citizen');
+            $this->assignRbacRole($role);
+        }
+    }
+
+    public function afterDelete(): void
+    {
+        parent::afterDelete();
+
+        $auth = Yii::$app->authManager;
+        if ($auth !== null) {
+            $auth->revokeAll((int) $this->id);
+        }
+    }
+
     public function hasRole(string $role): bool
     {
-        if (Yii::$app->authManager !== null && Yii::$app->user->id === (int) $this->id && Yii::$app->user->can($role)) {
-            return true;
+        $auth = Yii::$app->authManager;
+        if ($auth === null) {
+            return false;
         }
-        if ($this->hasAttribute('role')) {
-            return $this->getAttribute('role') === $role;
+
+        return $auth->checkAccess((int) $this->id, $role);
+    }
+
+    public function assignRbacRole(string $role): bool
+    {
+        $auth = Yii::$app->authManager;
+        if ($auth === null || (int) $this->id === 0) {
+            return false;
         }
-        return false;
+
+        $roleItem = $auth->getRole($role);
+        if ($roleItem === null) {
+            return false;
+        }
+
+        $auth->revokeAll((int) $this->id);
+        $auth->assign($roleItem, (int) $this->id);
+        return true;
     }
 
     public function isAdmin(): bool
@@ -144,7 +180,7 @@ class User extends ActiveRecord implements IdentityInterface
 
     public function isCandidate(): bool
     {
-        return $this->hasRole('candidate') || $this->isAdmin();
+        return $this->hasRole('candidate');
     }
 
     public function getCandidates()

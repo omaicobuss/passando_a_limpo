@@ -14,7 +14,7 @@ $this->params['breadcrumbs'][] = $this->title;
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h3 m-0"><?= Html::encode($this->title) ?></h1>
         <div class="d-flex gap-2">
-            <?php if (!Yii::$app->user->isGuest && (Yii::$app->user->can('manageElection') || Yii::$app->user->identity->isAdmin())): ?>
+            <?php if (!Yii::$app->user->isGuest && Yii::$app->user->can('manageElection')): ?>
                 <?= Html::a('Nova eleição', ['create'], ['class' => 'btn btn-primary']) ?>
                 <?= Html::a('Editar', ['update', 'id' => $model->id], ['class' => 'btn btn-outline-primary']) ?>
             <?php endif; ?>

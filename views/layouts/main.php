@@ -4,6 +4,8 @@
 /** @var string $content */
 
 use app\assets\AppAsset;
+use app\models\CandidateUpgradeRequest;
+use app\models\ProposalCommentReport;
 use app\widgets\Alert;
 use yii\bootstrap5\Breadcrumbs;
 use yii\bootstrap5\Html;
@@ -44,11 +46,27 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
     ];
     if (!Yii::$app->user->isGuest) {
         $items[] = ['label' => 'Minha Conta', 'url' => ['/site/my-account']];
-        if (Yii::$app->user->identity->isAdmin()) {
-            $items[] = ['label' => 'Solicitacoes', 'url' => ['/site/candidate-requests']];
+        if (Yii::$app->user->can('admin')) {
+            $pendingRequestsCount = (int) CandidateUpgradeRequest::find()
+                ->where(['status' => CandidateUpgradeRequest::STATUS_PENDING])
+                ->count();
+            $requestsLabel = $pendingRequestsCount > 0
+                ? sprintf('Solicitacoes (%d)', $pendingRequestsCount)
+                : 'Solicitacoes';
+
+            $reportedCommentsCount = (int) ProposalCommentReport::find()
+                ->select('comment_id')
+                ->distinct()
+                ->count('comment_id');
+            $reportedCommentsLabel = $reportedCommentsCount > 0
+                ? sprintf('Moderar Comentarios (%d)', $reportedCommentsCount)
+                : 'Moderar Comentarios';
+
+            $items[] = ['label' => $requestsLabel, 'url' => ['/site/candidate-requests']];
+            $items[] = ['label' => $reportedCommentsLabel, 'url' => ['/proposal-comment/reported']];
         }
     }
-    if (!Yii::$app->user->isGuest && Yii::$app->user->identity->isCandidate()) {
+    if (!Yii::$app->user->isGuest && Yii::$app->user->can('candidate')) {
         $items[] = ['label' => 'Painel do Candidato', 'url' => ['/candidate-panel/index']];
     }
     if (Yii::$app->user->isGuest) {

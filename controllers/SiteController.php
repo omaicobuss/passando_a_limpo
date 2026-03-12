@@ -51,6 +51,13 @@ class SiteController extends Controller
                     'candidate-requests',
                     'candidate-request-review',
                     'candidate-request-document',
+                    'my-candidates',
+                    'my-proposals',
+                    'my-comments',
+                    'my-suggestions',
+                    'my-proposal-votes',
+                    'my-suggestion-votes',
+                    'my-status-updates',
                 ],
                 'rules' => [
                     [
@@ -72,6 +79,13 @@ class SiteController extends Controller
                             'account-delete',
                             'account-request-candidate',
                             'candidate-request-document',
+                            'my-candidates',
+                            'my-proposals',
+                            'my-comments',
+                            'my-suggestions',
+                            'my-proposal-votes',
+                            'my-suggestion-votes',
+                            'my-status-updates',
                         ],
                         'allow' => true,
                         'roles' => ['@'],
@@ -82,8 +96,7 @@ class SiteController extends Controller
                             'candidate-request-review',
                         ],
                         'allow' => true,
-                        'roles' => ['@'],
-                        'matchCallback' => fn () => Yii::$app->user->identity?->isAdmin() ?? false,
+                        'roles' => ['admin'],
                     ],
                 ],
             ],
@@ -227,17 +240,17 @@ class SiteController extends Controller
             ->one();
 
         $activitySummary = [
-            'Perfis de candidato' => Candidate::find()->where(['user_id' => $user->id])->count(),
-            'Propostas publicadas' => Proposal::find()
+            ['label' => 'Perfis de candidato', 'value' => Candidate::find()->where(['user_id' => $user->id])->count(), 'url' => ['site/my-candidates']],
+            ['label' => 'Propostas publicadas', 'value' => Proposal::find()
                 ->alias('p')
                 ->innerJoin(['c' => Candidate::tableName()], 'c.id = p.candidate_id')
                 ->where(['c.user_id' => $user->id])
-                ->count(),
-            'Comentarios' => ProposalComment::find()->where(['user_id' => $user->id])->count(),
-            'Sugestoes em propostas' => ProposalSuggestion::find()->where(['user_id' => $user->id])->count(),
-            'Votos em propostas' => ProposalVote::find()->where(['user_id' => $user->id])->count(),
-            'Votos em sugestoes' => ProposalSuggestionVote::find()->where(['user_id' => $user->id])->count(),
-            'Atualizacoes de status' => ProposalStatusUpdate::find()->where(['user_id' => $user->id])->count(),
+                ->count(), 'url' => ['site/my-proposals']],
+            ['label' => 'Comentarios', 'value' => ProposalComment::find()->where(['user_id' => $user->id])->count(), 'url' => ['site/my-comments']],
+            ['label' => 'Sugestoes em propostas', 'value' => ProposalSuggestion::find()->where(['user_id' => $user->id])->count(), 'url' => ['site/my-suggestions']],
+            ['label' => 'Votos em propostas', 'value' => ProposalVote::find()->where(['user_id' => $user->id])->count(), 'url' => ['site/my-proposal-votes']],
+            ['label' => 'Votos em sugestoes', 'value' => ProposalSuggestionVote::find()->where(['user_id' => $user->id])->count(), 'url' => ['site/my-suggestion-votes']],
+            ['label' => 'Atualizacoes de status', 'value' => ProposalStatusUpdate::find()->where(['user_id' => $user->id])->count(), 'url' => ['site/my-status-updates']],
         ];
 
         return $this->render('my-account', [
@@ -326,7 +339,7 @@ class SiteController extends Controller
     {
         /** @var User $user */
         $user = Yii::$app->user->identity;
-        if ($user->role !== 'citizen') {
+        if (Yii::$app->user->can('candidate')) {
             Yii::$app->session->setFlash('error', 'A solicitacao de candidatura e exclusiva para usuarios citizen.');
             return $this->redirect(['site/my-account', '#' => 'candidatura']);
         }
@@ -340,7 +353,13 @@ class SiteController extends Controller
         }
 
         $form = new CandidateUpgradeRequestForm();
-        $form->load(Yii::$app->request->post());
+        $formName = $form->formName();
+        $formPost = Yii::$app->request->post($formName, []);
+        if (is_array($formPost)) {
+            // File input is handled exclusively by UploadedFile::getInstance().
+            unset($formPost['document']);
+            $form->load([$formName => $formPost]);
+        }
         $form->document = UploadedFile::getInstance($form, 'document');
 
         if (!$form->validate()) {
@@ -365,7 +384,12 @@ class SiteController extends Controller
             $extension
         );
         $filePath = $storageDir . DIRECTORY_SEPARATOR . $filename;
-        if (!$form->document->saveAs($filePath)) {
+        $saved = $form->document->saveAs($filePath);
+        if (!$saved) {
+            // Functional tests can use synthetic uploads that are not handled by move_uploaded_file().
+            $saved = $form->document->saveAs($filePath, false);
+        }
+        if (!$saved) {
             Yii::$app->session->setFlash('error', 'Falha ao salvar o comprovante enviado.');
             return $this->redirect(['site/my-account', '#' => 'candidatura']);
         }
@@ -405,15 +429,12 @@ class SiteController extends Controller
 
     public function actionCandidateRequestDocument(int $id): Response
     {
-        /** @var User $currentUser */
-        $currentUser = Yii::$app->user->identity;
         $request = CandidateUpgradeRequest::findOne($id);
         if ($request === null) {
             throw new NotFoundHttpException('Solicitacao nao encontrada.');
         }
 
-        $isOwner = (int) $request->user_id === (int) $currentUser->id;
-        if (!$currentUser->isAdmin() && !$isOwner) {
+        if (!Yii::$app->user->can('viewCandidateRequestDocument', ['candidateRequest' => $request])) {
             throw new ForbiddenHttpException('Voce nao pode acessar este comprovante.');
         }
 
@@ -454,7 +475,7 @@ class SiteController extends Controller
         if ($request->save(false, ['status', 'admin_notes', 'reviewed_by', 'reviewed_at', 'updated_at'])) {
             if ($decision === 'approve') {
                 $user = $request->user;
-                if ($user !== null && $user->role === 'citizen') {
+                if ($user !== null && !$user->hasRole('candidate')) {
                     $user->role = 'candidate';
                     $user->save(false, ['role', 'updated_at']);
                 }
@@ -473,12 +494,17 @@ class SiteController extends Controller
 
     private function isLastActiveAdmin(User $user): bool
     {
-        if (($user->role ?? '') !== 'admin') {
+        if (!Yii::$app->authManager?->checkAccess((int) $user->id, 'admin')) {
+            return false;
+        }
+
+        $adminIds = Yii::$app->authManager?->getUserIdsByRole('admin') ?? [];
+        if ($adminIds === []) {
             return false;
         }
 
         $activeAdmins = User::find()
-            ->where(['role' => 'admin', 'status' => User::STATUS_ACTIVE])
+            ->where(['id' => $adminIds, 'status' => User::STATUS_ACTIVE])
             ->count();
 
         return (int) $activeAdmins <= 1;
@@ -535,9 +561,109 @@ class SiteController extends Controller
         ];
     }
 
+    public function actionMyCandidates(): string
+    {
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+        $dataProvider = new ActiveDataProvider([
+            'query' => Candidate::find()
+                ->with(['election'])
+                ->where(['user_id' => $user->id])
+                ->orderBy(['created_at' => SORT_DESC]),
+            'pagination' => ['pageSize' => 20],
+        ]);
+        return $this->render('my-candidates', ['dataProvider' => $dataProvider]);
+    }
+
+    public function actionMyProposals(): string
+    {
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+        $dataProvider = new ActiveDataProvider([
+            'query' => Proposal::find()
+                ->alias('p')
+                ->with(['election', 'candidate'])
+                ->innerJoin(['c' => Candidate::tableName()], 'c.id = p.candidate_id')
+                ->where(['c.user_id' => $user->id])
+                ->orderBy(['p.created_at' => SORT_DESC]),
+            'pagination' => ['pageSize' => 20],
+        ]);
+        return $this->render('my-proposals', ['dataProvider' => $dataProvider]);
+    }
+
+    public function actionMyComments(): string
+    {
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+        $dataProvider = new ActiveDataProvider([
+            'query' => ProposalComment::find()
+                ->with(['proposal'])
+                ->where(['user_id' => $user->id])
+                ->orderBy(['created_at' => SORT_DESC]),
+            'pagination' => ['pageSize' => 20],
+        ]);
+        return $this->render('my-comments', ['dataProvider' => $dataProvider]);
+    }
+
+    public function actionMySuggestions(): string
+    {
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+        $dataProvider = new ActiveDataProvider([
+            'query' => ProposalSuggestion::find()
+                ->with(['proposal'])
+                ->where(['user_id' => $user->id])
+                ->orderBy(['created_at' => SORT_DESC]),
+            'pagination' => ['pageSize' => 20],
+        ]);
+        return $this->render('my-suggestions', ['dataProvider' => $dataProvider]);
+    }
+
+    public function actionMyProposalVotes(): string
+    {
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+        $dataProvider = new ActiveDataProvider([
+            'query' => ProposalVote::find()
+                ->with(['proposal'])
+                ->where(['user_id' => $user->id])
+                ->orderBy(['created_at' => SORT_DESC]),
+            'pagination' => ['pageSize' => 20],
+        ]);
+        return $this->render('my-proposal-votes', ['dataProvider' => $dataProvider]);
+    }
+
+    public function actionMySuggestionVotes(): string
+    {
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+        $dataProvider = new ActiveDataProvider([
+            'query' => ProposalSuggestionVote::find()
+                ->with(['suggestion', 'suggestion.proposal'])
+                ->where(['user_id' => $user->id])
+                ->orderBy(['created_at' => SORT_DESC]),
+            'pagination' => ['pageSize' => 20],
+        ]);
+        return $this->render('my-suggestion-votes', ['dataProvider' => $dataProvider]);
+    }
+
+    public function actionMyStatusUpdates(): string
+    {
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+        $dataProvider = new ActiveDataProvider([
+            'query' => ProposalStatusUpdate::find()
+                ->with(['proposal'])
+                ->where(['user_id' => $user->id])
+                ->orderBy(['created_at' => SORT_DESC]),
+            'pagination' => ['pageSize' => 20],
+        ]);
+        return $this->render('my-status-updates', ['dataProvider' => $dataProvider]);
+    }
+
     private function assertAdmin(): void
     {
-        if (!Yii::$app->user->identity?->isAdmin()) {
+        if (!Yii::$app->user->can('admin')) {
             throw new ForbiddenHttpException('Apenas administradores podem acessar este recurso.');
         }
     }

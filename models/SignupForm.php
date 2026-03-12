@@ -9,7 +9,6 @@ class SignupForm extends Model
     public string $username = '';
     public string $email = '';
     public string $password = '';
-    public string $role = 'citizen';
 
     public function rules(): array
     {
@@ -21,7 +20,6 @@ class SignupForm extends Model
             [['password'], 'string', 'min' => 6],
             [['username'], 'unique', 'targetClass' => User::class, 'targetAttribute' => 'username'],
             [['email'], 'unique', 'targetClass' => User::class, 'targetAttribute' => 'email'],
-            [['role'], 'in', 'range' => ['candidate', 'citizen']],
         ];
     }
 
@@ -31,7 +29,6 @@ class SignupForm extends Model
             'username' => 'Usuário',
             'email' => 'E-mail',
             'password' => 'Senha',
-            'role' => 'Quero me cadastrar como',
         ];
     }
 
@@ -44,7 +41,7 @@ class SignupForm extends Model
         $user = new User();
         $user->username = $this->username;
         $user->email = $this->email;
-        $user->role = $this->role;
+        $user->role = 'citizen';
         $user->setPassword($this->password);
         $user->generateAuthKey();
 

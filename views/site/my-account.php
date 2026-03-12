@@ -62,10 +62,14 @@ $this->params['breadcrumbs'][] = $this->title;
                 <div class="card-body">
                     <h2 class="h5 mb-3">Resumo dos seus dados</h2>
                     <ul class="list-group list-group-flush">
-                        <?php foreach ($activitySummary as $label => $value): ?>
+                        <?php foreach ($activitySummary as $item): ?>
                             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span><?= Html::encode((string) $label) ?></span>
-                                <span class="badge bg-secondary rounded-pill"><?= Html::encode((string) $value) ?></span>
+                                <?php if (!empty($item['url']) && (int) $item['value'] > 0): ?>
+                                    <?= Html::a(Html::encode((string) $item['label']), $item['url'], ['class' => 'text-decoration-none']) ?>
+                                <?php else: ?>
+                                    <span><?= Html::encode((string) $item['label']) ?></span>
+                                <?php endif; ?>
+                                <span class="badge bg-secondary rounded-pill"><?= Html::encode((string) $item['value']) ?></span>
                             </li>
                         <?php endforeach; ?>
                     </ul>
@@ -73,7 +77,7 @@ $this->params['breadcrumbs'][] = $this->title;
             </div>
         </div>
 
-        <?php if ($user->role === 'citizen'): ?>
+        <?php if (!Yii::$app->user->can('candidate')): ?>
             <div class="col-12" id="candidatura">
                 <div class="card shadow-sm border-warning">
                     <div class="card-body">

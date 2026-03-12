@@ -21,7 +21,7 @@ class CandidatePanelController extends Controller
                 'rules' => [
                     [
                         'allow' => true,
-                        'roles' => ['@'],
+                        'roles' => ['candidate'],
                     ],
                 ],
             ],
@@ -30,13 +30,14 @@ class CandidatePanelController extends Controller
 
     public function actionIndex(): string
     {
-        $user = Yii::$app->user->identity;
-        if (!$user->isCandidate()) {
+        if (!Yii::$app->user->can('candidate')) {
             throw new ForbiddenHttpException('Apenas candidatos podem acessar este painel.');
         }
 
+        $user = Yii::$app->user->identity;
+
         $candidateIds = Candidate::find()->select('id');
-        if (!$user->isAdmin()) {
+        if (!Yii::$app->user->can('admin')) {
             $candidateIds->andWhere(['user_id' => $user->id]);
         }
         $candidateIdList = $candidateIds->column();

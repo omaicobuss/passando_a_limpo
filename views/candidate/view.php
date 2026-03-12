@@ -13,7 +13,7 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="candidate-view">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h3 m-0"><?= Html::encode($model->display_name) ?></h1>
-        <?php if (!Yii::$app->user->isGuest && (Yii::$app->user->identity->isAdmin() || (int) Yii::$app->user->id === (int) $model->user_id)): ?>
+        <?php if (!Yii::$app->user->isGuest && Yii::$app->user->can('manageCandidate', ['candidate' => $model])): ?>
             <?= Html::a('Editar perfil', ['update', 'id' => $model->id], ['class' => 'btn btn-outline-primary']) ?>
         <?php endif; ?>
     </div>

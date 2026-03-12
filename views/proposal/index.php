@@ -18,7 +18,7 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="proposal-index">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h3 m-0"><?= Html::encode($this->title) ?></h1>
-        <?php if (!Yii::$app->user->isGuest && Yii::$app->user->identity->isCandidate()): ?>
+        <?php if (!Yii::$app->user->isGuest && Yii::$app->user->can('candidate')): ?>
             <?= Html::a('Nova proposta', ['create'], ['class' => 'btn btn-primary']) ?>
         <?php endif; ?>
     </div>
@@ -46,11 +46,19 @@ $this->params['breadcrumbs'][] = $this->title;
         'itemOptions' => ['class' => 'mb-3'],
         'layout' => '{items}{pager}',
         'itemView' => function (Proposal $model) {
+            $actions = '<a class="btn btn-sm btn-primary" href="' . yii\helpers\Url::to(['view', 'id' => $model->id]) . '">Abrir</a>';
+
+            if (!Yii::$app->user->isGuest
+                && Yii::$app->user->can('updateOwnProposal', ['proposal' => $model])
+                && !$model->isEditLockedByElectionDeadline()) {
+                $actions .= ' <a class="btn btn-sm btn-outline-secondary" href="' . yii\helpers\Url::to(['update', 'id' => $model->id]) . '">Editar</a>';
+            }
+
             return '<div class="card"><div class="card-body">'
                 . '<h2 class="h5 mb-1">' . Html::encode($model->title) . '</h2>'
                 . '<p class="text-muted mb-1">' . Html::encode((string) $model->theme) . ' · ' . Html::encode($model->candidate->display_name ?? '-') . '</p>'
                 . '<p class="mb-2">Score: <strong>' . (int) $model->score . '</strong> | Status: ' . Html::encode(Proposal::statusOptions()[$model->fulfillment_status] ?? $model->fulfillment_status) . '</p>'
-                . '<a class="btn btn-sm btn-primary" href="' . yii\helpers\Url::to(['view', 'id' => $model->id]) . '">Abrir</a>'
+                . $actions
                 . '</div></div>';
         },
     ]) ?>

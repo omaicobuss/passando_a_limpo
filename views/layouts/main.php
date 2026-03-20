@@ -124,7 +124,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                     <span class="app-brand__mark">PL</span>
                     <span class="app-brand__text">
                         <strong>Passando a Limpo</strong>
-                        <small>Prestação de contas e debate público</small>
+                        <small>Debate público e prestação de contas</small>
                     </span>
                 </a>
 
@@ -175,8 +175,8 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
             <div class="row g-4">
                 <div class="col-lg-5">
                     <span class="app-section-eyebrow">Participação cívica</span>
-                    <h2 class="app-footer__title">Uma interface pensada para acompanhar eleições, candidaturas e compromissos públicos.</h2>
-                    <p class="app-footer__text mb-0">O sistema foi redesenhado com linguagem visual inspirada em produtos financeiros editoriais: contraste alto, cartões amplos, navegação clara e foco em comparação de informações.</p>
+                    <h2 class="app-footer__title">Compare propostas, acompanhe eleições e cobre resultados.</h2>
+                    <p class="app-footer__text mb-0"></p>
                 </div>
                 <div class="col-sm-6 col-lg-3">
                     <h3 class="app-footer__heading">Mapa rápido</h3>
@@ -204,7 +204,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 </div>
             </div>
             <div class="app-footer__bottom d-flex flex-column flex-md-row justify-content-between gap-2 align-items-md-center">
-                <span>Design editorial com foco em leitura, comparação e confiabilidade.</span>
+                <span>Passando a Limpo. Plataforma de transparência política.</span>
                 <span>Baseado em Yii2 e Bootstrap 5.</span>
             </div>
         </div>

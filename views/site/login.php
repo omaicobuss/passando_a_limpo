@@ -11,13 +11,12 @@ use yii\bootstrap5\Html;
 $this->title = 'Entrar';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="site-login">
-    <h1><?= Html::encode($this->title) ?></h1>
-
-    <p>Informe usuário e senha para acessar sua conta.</p>
-
-    <div class="row">
-        <div class="col-lg-5">
+<div class="site-login d-flex justify-content-center align-items-center py-5">
+    <div class="card app-filter-card" style="width: 100%; max-width: 450px;">
+        <div class="card-body p-4 p-md-5">
+            <span class="app-section-eyebrow">Autenticação</span>
+            <h1 class="h3 mt-3 mb-2"><?= Html::encode($this->title) ?></h1>
+            <p class="mb-4 text-muted">Informe usuário e senha para acessar sua conta.</p>
 
             <?php $form = ActiveForm::begin([
                 'id' => 'login-form',
@@ -29,26 +28,29 @@ $this->params['breadcrumbs'][] = $this->title;
                 ],
             ]); ?>
 
-            <?= $form->field($model, 'username')->textInput(['autofocus' => true]) ?>
+            <div class="mb-3">
+                <?= $form->field($model, 'username')->textInput(['autofocus' => true]) ?>
+            </div>
 
-            <?= $form->field($model, 'password')->passwordInput() ?>
+            <div class="mb-3">
+                <?= $form->field($model, 'password')->passwordInput() ?>
+            </div>
 
-            <?= $form->field($model, 'rememberMe')->checkbox([
-                'template' => "<div class=\"custom-control custom-checkbox\">{input} {label}</div>\n<div class=\"col-lg-8\">{error}</div>",
-            ]) ?>
+            <div class="mb-4">
+                <?= $form->field($model, 'rememberMe')->checkbox([
+                    'template' => "<div class=\"form-check\">{input} {label}</div>\n<div class=\"invalid-feedback d-block\">{error}</div>",
+                ]) ?>
+            </div>
 
-            <div class="form-group">
-                <div>
-                    <?= Html::submitButton('Entrar', ['class' => 'btn btn-primary', 'name' => 'login-button']) ?>
-                </div>
+            <div class="d-grid mb-4">
+                <?= Html::submitButton('Entrar', ['class' => 'btn btn-primary app-btn', 'name' => 'login-button']) ?>
             </div>
 
             <?php ActiveForm::end(); ?>
 
-            <div class="text-muted small">
-                Usuário administrador inicial: <strong>admin</strong> com senha <strong>admin123</strong>.
+            <div class="app-inline-note">
+                <strong>Dica de acesso:</strong> Usuário administrador inicial: <strong>admin</strong> com senha <strong>admin123</strong>.
             </div>
-
         </div>
     </div>
 </div>

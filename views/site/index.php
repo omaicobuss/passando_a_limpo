@@ -49,10 +49,8 @@ $processSteps = [
             <div class="row align-items-center g-4 g-xxl-5">
                 <div class="col-lg-7 col-xxl-6">
                     <span class="app-section-eyebrow">Plataforma cívica</span>
-                    <h1 class="home-title mt-3 mb-3">Compare propostas, acompanhe eleições e cobre resultados com clareza editorial.</h1>
-                    <p class="home-subtitle mb-4">
-                        O Passando a Limpo traduz a lógica visual de plataformas de comparação para o contexto democrático: leitura rápida, evidência pública e acompanhamento contínuo das promessas.
-                    </p>
+                    <h1 class="home-title mt-3 mb-3">Compare propostas, acompanhe eleições e cobre resultados.</h1>
+                    
                     <div class="d-flex flex-wrap gap-3">
                         <?= Html::a('Explorar propostas', ['/proposal/index'], ['class' => 'btn btn-primary btn-lg app-btn']) ?>
                         <?= Html::a('Ver eleições ativas', ['/election/index'], ['class' => 'btn btn-outline-light btn-lg app-btn app-btn--light']) ?>
@@ -86,10 +84,6 @@ $processSteps = [
                                 </div>
                             </div>
                         </div>
-                        <div class="home-showcase__panel home-showcase__panel--secondary">
-                            <p class="home-showcase__card-title mb-2">Leitura orientada por decisão</p>
-                            <p class="mb-0">Assim como no site de referência, o foco está em comparar informação crítica sem poluir a navegação.</p>
-                        </div>
                         <div class="home-showcase__floating">
                             <span class="home-showcase__floating-label">Fluxo principal</span>
                             <strong>Explorar → Comparar → Participar → Acompanhar</strong>
@@ -104,7 +98,7 @@ $processSteps = [
         <div class="home-section__heading d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
             <div>
                 <span class="app-section-eyebrow">Serviços da plataforma</span>
-                <h2 class="home-section-title mt-2 mb-0">O núcleo do sistema foi reorganizado como uma vitrine de comparação e confiança.</h2>
+                <h2 class="home-section-title mt-2 mb-0">Ferramentas projetadas para dar transparência ao debate político e facilitar a sua decisão.</h2>
             </div>
             <?= Html::a('Conhecer candidatos', ['/candidate/index'], ['class' => 'home-inline-link']) ?>
         </div>
@@ -125,7 +119,7 @@ $processSteps = [
         <div class="home-section__heading d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
             <div>
                 <span class="app-section-eyebrow">Coleções em destaque</span>
-                <h2 class="home-section-title mt-2 mb-0">Eleições e propostas aparecem em cartões largos, com leitura rápida e ação direta.</h2>
+                <h2 class="home-section-title mt-2 mb-0">Acompanhe as eleições ativas e analise as propostas mais recentes publicadas pelos candidatos.</h2>
             </div>
             <?= Html::a('Abrir catálogo completo', ['/proposal/index'], ['class' => 'home-inline-link']) ?>
         </div>
@@ -151,7 +145,7 @@ $processSteps = [
                     <?php else: ?>
                         <div class="home-empty">
                             <h3 class="h6 mb-2">Nenhuma eleição ativa</h3>
-                            <p class="mb-0">Assim que novos ciclos forem cadastrados, eles aparecerão aqui com destaque editorial.</p>
+                            <p class="mb-0">Assim que novos processos eleitorais começarem, eles estarão disponíveis aqui para o seu acompanhamento.</p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -183,7 +177,7 @@ $processSteps = [
                         <div class="col-12">
                             <div class="home-empty h-100">
                                 <h3 class="h6 mb-2">Nenhuma proposta recente</h3>
-                                <p class="mb-3">As propostas publicadas aparecerão aqui com visual de comparação e acesso rápido.</p>
+                                <p class="mb-3">As propostas registradas pelos candidatos aparecerão aqui para serem analisadas e debatidas por você.</p>
                                 <?= Html::a('Explorar catálogo', ['/proposal/index'], ['class' => 'btn btn-primary app-btn']) ?>
                             </div>
                         </div>
@@ -199,7 +193,7 @@ $processSteps = [
                 <div class="col-lg-4">
                     <span class="app-section-eyebrow">Fluxo de participação</span>
                     <h2 class="home-section-title mt-2">Um processo simples para transformar dados eleitorais em decisão pública informada.</h2>
-                    <p class="home-process__intro mb-0">A referência visual organiza a jornada em blocos sequenciais. Aqui, a mesma lógica orienta descoberta, comparação e acompanhamento.</p>
+                    <p class="home-process__intro mb-0">Entenda de forma clara e estruturada como você pode utilizar a plataforma para pesquisar candidatos, avaliar promessas e acompanhar metas.</p>
                 </div>
                 <div class="col-lg-8">
                     <div class="row g-3">
@@ -214,20 +208,6 @@ $processSteps = [
                         <?php endforeach; ?>
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="home-cta-band">
-        <div class="row g-4 align-items-center">
-            <div class="col-lg-8">
-                <span class="app-section-eyebrow">Participe da leitura pública</span>
-                <h2 class="home-section-title mt-2 mb-2">Entre para votar, comentar e acompanhar o cumprimento das propostas depois da eleição.</h2>
-                <p class="mb-0">O novo layout prioriza confiança, contraste e contexto. Agora é só usar a plataforma com a mesma fluidez de uma vitrine editorial moderna.</p>
-            </div>
-            <div class="col-lg-4 d-flex flex-column flex-sm-row flex-lg-column align-items-lg-end gap-3 justify-content-lg-center">
-                <?= Html::a('Criar conta', ['/site/signup'], ['class' => 'btn btn-light btn-lg app-btn app-btn--solid-light']) ?>
-                <?= Html::a('Abrir propostas', ['/proposal/index'], ['class' => 'btn btn-outline-light btn-lg app-btn app-btn--light']) ?>
             </div>
         </div>
     </section>
